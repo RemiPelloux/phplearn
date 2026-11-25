@@ -1,0 +1,164 @@
+/* Code editor tokens: syntax colors tuned for the paper (light) and ink (dark) themes. */
+:root,
+[data-theme="light"] {
+  --editor-bg: #fdfcf8;
+  --editor-line: rgba(106, 116, 208, 0.06);
+  --editor-selection: rgba(106, 116, 208, 0.2);
+  --editor-match: rgba(106, 116, 208, 0.1);
+  --editor-tabbar: #f3f1e9;
+  --syn-keyword: #8a2fb5;
+  --syn-string: #2f6f2c;
+  --syn-number: #a14d00;
+  --syn-comment: #8a8172;
+  --syn-function: #1f5f99;
+  --syn-type: #0f7b72;
+  --syn-property: #a33c2a;
+  --syn-variable: #2b2620;
+  --syn-punct: #6b6152;
+  --syn-heading: #3f4797;
+}
+
+[data-theme="dark"] {
+  --editor-bg: #1e1c19;
+  --editor-line: rgba(255, 255, 255, 0.035);
+  --editor-selection: rgba(142, 151, 234, 0.3);
+  --editor-match: rgba(142, 151, 234, 0.15);
+  --editor-tabbar: #191815;
+  --syn-keyword: #d397c8;
+  --syn-string: #a9d07b;
+  --syn-number: #f0a060;
+  --syn-comment: #7d766a;
+  --syn-function: #86b6dd;
+  --syn-type: #7fcfc0;
+  --syn-property: #f0a08a;
+  --syn-variable: #eeeae0;
+  --syn-punct: #a8a08f;
+  --syn-heading: #b4bbf5;
+}
+
+/* Rendered Markdown preview (CLAUDE.md, SKILL.md, README…). */
+.md-preview {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+}
+.md-preview h1 {
+  font-size: 1.6em;
+  font-weight: 700;
+  margin: 0.2em 0 0.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border);
+}
+.md-preview h2 {
+  font-size: 1.25em;
+  font-weight: 700;
+  margin: 1.4em 0 0.5em;
+}
+.md-preview h3,
+.md-preview h4 {
+  font-size: 1.05em;
+  font-weight: 650;
+  margin: 1.2em 0 0.4em;
+}
+.md-preview p {
+  margin: 0.6em 0;
+}
+.md-preview ul,
+.md-preview ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+.md-preview ul {
+  list-style: disc;
+}
+.md-preview ol {
+  list-style: decimal;
+}
+.md-preview li {
+  margin: 0.2em 0;
+}
+.md-preview code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+.md-preview pre {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: 0.8em 0;
+}
+.md-preview pre code {
+  background: none;
+  padding: 0;
+}
+.md-preview blockquote {
+  border-left: 3px solid var(--accent-mark);
+  padding-left: 12px;
+  color: var(--text-2);
+  margin: 0.8em 0;
+}
+.md-preview a {
+  color: var(--accent-fg);
+  text-decoration: underline;
+}
+.md-preview hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.2em 0;
+}
+
+/* Trace: the line being executed, and lines with problems. */
+.cm-trace-line {
+  background: color-mix(in srgb, var(--accent-mark) 18%, transparent) !important;
+  box-shadow: inset 3px 0 0 var(--accent-mark);
+}
+.cm-error-line {
+  background: color-mix(in srgb, var(--bad) 9%, transparent);
+}
+.cm-warn-line {
+  background: color-mix(in srgb, var(--warn) 9%, transparent);
+}
+.cm-gutter-mark {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  margin-top: 0.55em;
+}
+.cm-gutter-mark.error {
+  background: var(--bad);
+}
+.cm-gutter-mark.warning,
+.cm-gutter-mark.notice,
+.cm-gutter-mark.deprecated {
+  background: var(--warn);
+}
+.cm-gutter-mark.trace {
+  width: 0;
+  height: 0;
+  border-radius: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid var(--accent-mark);
+}
+.cm-inline-problem {
+  margin-left: 1.5em;
+  font-size: 0.86em;
+  font-style: italic;
+  opacity: 0.9;
+}
+.cm-inline-problem.error {
+  color: var(--bad);
+}
+.cm-inline-problem.warning,
+.cm-inline-problem.notice,
+.cm-inline-problem.deprecated {
+  color: var(--warn);
+}
