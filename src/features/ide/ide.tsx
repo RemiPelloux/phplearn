@@ -10,6 +10,7 @@ import {
   FileCode2,
   FilePlus2,
   Footprints,
+  Keyboard,
   Loader2,
   Maximize2,
   Minimize2,
@@ -23,14 +24,17 @@ import {
   Variable,
   X,
 } from "lucide-react";
-import { useL } from "@/i18n";
+import { useL, useLocale } from "@/i18n";
+import { keyParts, useIsMac } from "@/lib/platform";
 import type { PhpVersion, RunRequest, RunResult } from "@/php/types";
 import { PHP_VERSIONS } from "@/php/types";
 import { useProgress } from "@/features/progress/store";
 import { CodeEditor, type CodeEditorHandle, type CursorInfo, type EditorProblem } from "./code/code-editor";
+import { setCompletionLocale } from "./code/completions";
 import { langOf } from "./code/languages";
 import { CompareRunner } from "./compare";
 import { OutputPanel, ProblemsPanel, TracePanel, VariablesPanel } from "./panels";
+import { ShortcutList } from "./shortcuts";
 import { useRunner, useRuntimeStatus } from "./use-runner";
 import { VersionPicker } from "./version-picker";
 
@@ -134,6 +138,10 @@ export function Ide({
   const [comparing, setComparing] = useState(false);
   const [mobileView, setMobileView] = useState<"code" | "panel">("code");
   const editor = useRef<CodeEditorHandle>(null);
+  const [showKeys, setShowKeys] = useState(false);
+  const mac = useIsMac();
+  const locale = useLocale();
+  useEffect(() => setCompletionLocale(locale), [locale]);
   const { run, running } = useRunner(where);
   const status = useRuntimeStatus(version);
 
@@ -149,14 +157,20 @@ export function Ide({
     onResult?.(r, snapshot);
   }, [running, files, run, version, probes, request, onResult, isWide]);
 
-  // Alt+↑ / Alt+↓ move through the trace from anywhere in the IDE.
+  // While tracing, the arrow keys step through the program (↓/→ next, ↑/← previous),
+  // except when typing in the editor or a field, where arrows keep moving the cursor.
   const traceStep = result && traceIndex !== null ? result.steps[traceIndex] : null;
   useEffect(() => {
     if (!result?.steps.length || traceIndex === null) return;
     const onKey = (e: KeyboardEvent) => {
-      if (!e.altKey || (e.key !== "ArrowDown" && e.key !== "ArrowUp")) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el?.closest?.(".cm-editor, input, textarea, select, [role=dialog]")) return;
+      const next = e.key === "ArrowDown" || e.key === "ArrowRight";
+      const prev = e.key === "ArrowUp" || e.key === "ArrowLeft";
+      if (!next && !prev) return;
       e.preventDefault();
-      setTraceIndex((i) => Math.max(0, Math.min(result.steps.length - 1, (i ?? 0) + (e.key === "ArrowDown" ? 1 : -1))));
+      setTraceIndex((i) => Math.max(0, Math.min(result.steps.length - 1, (i ?? 0) + (next ? 1 : -1))));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -324,6 +338,7 @@ export function Ide({
             </button>
           )}
         </div>
+        {settings.symbolBar !== false && langOf(current).id === "php" && <SymbolBar onInsert={(text, back) => editor.current?.insert(text, back)} mac={mac} />}
         <div className="relative min-h-0 flex-1" style={{ ["--editor-font" as string]: `${settings.fontSize}px` }}>
           <CodeEditor
             key={current}
@@ -446,6 +461,36 @@ export function Ide({
               <BookMarked className="size-3.5" /> <span className="hidden lg:inline">{asideLabel}</span>
             </button>
           )}
+          <div className="relative">
+            <button
+              onClick={() => setShowKeys((v) => !v)}
+              aria-expanded={showKeys}
+              className={clsx("grid size-8 place-items-center rounded-md hover:bg-surface-2", showKeys ? "bg-accent-soft text-accent-fg" : "text-fg-2 hover:text-fg")}
+              aria-label={l("Keyboard shortcuts", "Raccourcis clavier")}
+              title={l("Keyboard shortcuts", "Raccourcis clavier")}
+            >
+              <Keyboard className="size-4" />
+            </button>
+            {showKeys && (
+              <div className="absolute right-0 z-40 mt-1.5 w-[min(30rem,calc(100vw-2rem))] rounded-xl border border-line bg-elevated p-4 shadow-[var(--shadow-lg)]" role="dialog" aria-label={l("Keyboard shortcuts", "Raccourcis clavier")}>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm font-semibold">{l("Keyboard shortcuts", "Raccourcis clavier")}</p>
+                  <button onClick={() => setShowKeys(false)} className="grid size-7 place-items-center rounded-md text-fg-3 hover:bg-surface-2" aria-label={l("Close", "Fermer")}>
+                    <X className="size-4" />
+                  </button>
+                </div>
+                <div className="scrollbar-thin max-h-[60vh] overflow-y-auto pr-1">
+                  <ShortcutList compact />
+                  <p className="mt-3 text-[11.5px] text-fg-3">
+                    {l(
+                      "Snippets: type foreach, if, function, class, match, try, echo or vd and press Tab. Fill each field, then Tab to the next.",
+                      "Snippets : tape foreach, if, function, class, match, try, echo ou vd puis Tab. Remplis chaque champ, puis Tab pour passer au suivant.",
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
           <button
             onClick={() => setComparing(true)}
             className="flex h-8 items-center gap-1 rounded-md px-2 text-xs text-fg-2 hover:bg-surface-2 hover:text-fg"
@@ -547,12 +592,51 @@ export function Ide({
   );
 }
 
+/** One-click buttons for characters that are hard to type (\n, \, |, { }, [ ] on a French Mac keyboard, $ and -> on phones). */
+function SymbolBar({ onInsert, mac }: { onInsert: (text: string, back?: number) => void; mac: boolean }) {
+  const l = useL();
+  const items: Array<[label: string, text: string, back: number, title: string]> = [
+    ["\\n", "\\n", 0, l(`New line inside a string (${keyParts("Alt-Enter", mac).join("")})`, `Retour à la ligne dans une chaîne (${keyParts("Alt-Enter", mac).join("")})`)],
+    ["$", "$", 0, l("Variable", "Variable")],
+    ["->", "->", 0, l("Property or method of an object", "Propriété ou méthode d'un objet")],
+    ["=>", " => ", 0, l("Key => value, match arm", "Clé => valeur, branche de match")],
+    ['"…"', '""', 1, l("Double quotes (interpolate $variables)", "Guillemets doubles (interpolent les $variables)")],
+    ["'…'", "''", 1, l("Single quotes (text as written)", "Guillemets simples (texte tel quel)")],
+    ["( )", "()", 1, l("Parentheses", "Parenthèses")],
+    ["[ ]", "[]", 1, l("Array", "Tableau")],
+    ["{ }", "{}", 1, l("Block", "Bloc")],
+    [";", ";", 0, l("End of statement", "Fin d'instruction")],
+    [".", " . ", 0, l("Join strings", "Coller des chaînes")],
+    ["??", " ?? ", 0, l("Default if null or missing", "Valeur par défaut si null ou absent")],
+    ["|", "|", 0, l("Pipe (union types, |>)", "Barre verticale (types union, |>)")],
+    ["\\", "\\", 0, l("Backslash (namespaces, escapes)", "Antislash (namespaces, échappements)")],
+    ["<?php", "<?php\n", 0, l("Opening tag", "Balise d'ouverture")],
+    ["PHP_EOL", "PHP_EOL", 0, l("End-of-line constant", "Constante de fin de ligne")],
+  ];
+  return (
+    <div className="scrollbar-thin flex h-8 shrink-0 items-center gap-1 overflow-x-auto border-b border-line bg-[var(--editor-bg)] px-2" role="toolbar" aria-label={l("Insert a symbol", "Insérer un symbole")}>
+      {items.map(([label, text, back, title]) => (
+        <button
+          key={label}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onInsert(text, back)}
+          title={title}
+          aria-label={title}
+          className="h-6 shrink-0 rounded-md border border-line bg-surface px-2 font-mono text-[12px] text-fg-2 shadow-[0_1px_0_var(--edge)] hover:border-line-strong hover:text-fg active:translate-y-px"
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function TraceBubble({ text }: { text: string }) {
   return (
     <div className="pointer-events-none absolute right-3 bottom-3 z-10 flex items-center gap-1.5 rounded-full border border-line bg-elevated px-3 py-1 text-[11px] font-medium text-fg-2 shadow-[var(--shadow-lg)]">
       <Footprints className="size-3.5 text-accent-fg" />
       {text}
-      <span className="hidden text-fg-3 lg:inline">· Alt+↑/↓</span>
+      <span className="hidden text-fg-3 lg:inline">· ↑ ↓</span>
     </div>
   );
 }

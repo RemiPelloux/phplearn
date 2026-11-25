@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { ALL_LESSONS, CHAPTERS, type Files } from "@/features/curriculum";
-import type { Locale } from "@/i18n/locale";
+import { detectLocale, type Locale } from "@/i18n/locale";
 import type { PhpVersion } from "@/php/types";
 import { dayKey, emptyDay, FLAWLESS_XP, levelFor, QUEST_XP, questsFor, streak, type AvatarColor, type DailyGoal, type DayActivity } from "./rules";
 
@@ -20,12 +20,16 @@ export interface Settings {
   theme: "dark" | "light";
   motion: "system" | "reduced" | "full";
   showStreak: boolean;
-  /** Unset until the learner picks one (we then guess from the browser). */
+  /** The language shown. Follows the browser until the learner picks one. */
   locale?: Locale;
+  /** True once the learner picked a language themselves; false means "match my browser". */
+  localeChosen?: boolean;
   dailyGoal: DailyGoal;
   /** Editor font size in px. */
   fontSize: number;
   wordWrap: boolean;
+  /** Buttons above the editor for symbols that are hard to type. */
+  symbolBar: boolean;
   /** Version the Playground starts with. */
   phpVersion: PhpVersion;
 }
@@ -78,6 +82,8 @@ interface ProgressState {
   saveLesson: (id: string, save: LessonSave) => void;
   clearLesson: (id: string) => void;
   updateSettings: (s: Partial<Settings>) => void;
+  /** Use the browser's language, unless the learner picked one. `reset` goes back to following the browser. */
+  followBrowserLocale: (reset?: boolean) => void;
   dismissToast: (id: number) => void;
   dismissLevelUp: () => void;
   resetProgress: () => void;
@@ -98,7 +104,7 @@ const initial = {
   activity: {},
   questsClaimed: {},
   saves: {},
-  settings: { theme: "light", motion: "system", showStreak: true, dailyGoal: 60, fontSize: 14, wordWrap: false, phpVersion: "8.5" } as Settings,
+  settings: { theme: "light", motion: "system", showStreak: true, dailyGoal: 60, fontSize: 14, wordWrap: false, symbolBar: true, phpVersion: "8.5" } as Settings,
   toasts: [] as Toast[],
   levelUp: null as number | null,
   holdCelebrations: false,
@@ -205,8 +211,16 @@ export const useProgress = create<ProgressState>()(
           }),
         updateSettings: (patch) => {
           const prev = get().settings;
-          set((s) => ({ settings: { ...s.settings, ...patch } }));
+          // Picking a language by hand stops following the browser's.
+          const chosen = patch.locale ? { localeChosen: true } : {};
+          set((s) => ({ settings: { ...s.settings, ...patch, ...chosen } }));
           if (patch.locale && prev.locale && patch.locale !== prev.locale && get().onboarded) unlock("polyglot");
+        },
+        followBrowserLocale: (reset) => {
+          const s = get().settings;
+          if (s.localeChosen && !reset) return;
+          const locale = detectLocale();
+          if (s.locale !== locale || reset) set((st) => ({ settings: { ...st.settings, locale, localeChosen: false } }));
         },
         dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
         dismissLevelUp: () => set({ levelUp: null }),

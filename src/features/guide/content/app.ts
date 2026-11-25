@@ -243,7 +243,7 @@ After a run, open the **Trace** tab. Each row is one executed statement:
 | call stack | The function running it, and who called that function (´{main}´ is the top level) |
 | changes | The variables that changed at this step |
 
-Click a row, use the buttons, or press **Alt+↓ / Alt+↑**: the editor highlights the line with an arrow in the margin, the **Variables** tab shows the values at that moment, and the **Output** tab shows only what had been printed so far. [[Play]] replays the program automatically.
+Click a row, use the buttons, or press the **arrow keys** (↓ or → for the next step, ↑ or ← for the previous one): the editor highlights the line with an arrow in the margin, the **Variables** tab shows the values at that moment, and the **Output** tab shows only what had been printed so far. [[Play]] replays the program automatically.
 
 ## Debugging with it
 
@@ -267,7 +267,7 @@ Après une exécution, ouvre l'onglet **Trace**. Chaque ligne est une instructio
 | pile d'appels | La fonction qui l'exécute, et qui a appelé cette fonction (´{main}´ est le niveau principal) |
 | changements | Les variables modifiées à cette étape |
 
-Clique sur une ligne, utilise les boutons, ou appuie sur **Alt+↓ / Alt+↑** : l'éditeur surligne la ligne avec une flèche dans la marge, l'onglet **Variables** montre les valeurs à ce moment, et l'onglet **Sortie** montre seulement ce qui avait été affiché jusque-là. [[Lecture]] rejoue le programme automatiquement.
+Clique sur une ligne, utilise les boutons, ou appuie sur les **flèches** (↓ ou → pour l'étape suivante, ↑ ou ← pour la précédente) : l'éditeur surligne la ligne avec une flèche dans la marge, l'onglet **Variables** montre les valeurs à ce moment, et l'onglet **Sortie** montre seulement ce qui avait été affiché jusque-là. [[Lecture]] rejoue le programme automatiquement.
 
 ## Déboguer avec
 
@@ -384,6 +384,10 @@ Your code never leaves your computer: PHP runs locally in WebAssembly.
 ## Profiles, backups, reset
 
 On the [Profile](/profile) page you can add profiles so several people share one browser, download a JSON backup, restore it on another computer, see every stored key with its size, and reset or erase everything.
+
+## The leaderboard
+
+The [Leaderboard](/leaderboard) ranks every profile on this browser by XP this week, all-time XP, stars, lessons or streak, and shows your personal records (best day, longest streak, this week against last week). It's computed from the profiles stored here: nothing is sent anywhere, so it's for people sharing a computer, or for racing yourself.
 `,
       fr: md`
 ## Ce qui est enregistré
@@ -399,6 +403,10 @@ Ton code ne quitte jamais ton ordinateur : PHP tourne localement en WebAssembly.
 ## Profils, sauvegardes, réinitialisation
 
 Sur la page [Profil](/profile), tu peux ajouter des profils pour partager un navigateur à plusieurs, télécharger une sauvegarde JSON, la restaurer sur un autre ordinateur, voir chaque clé enregistrée avec sa taille, et tout réinitialiser ou effacer.
+
+## Le classement
+
+Le [Classement](/leaderboard) range chaque profil de ce navigateur par XP de la semaine, XP au total, étoiles, leçons ou série, et montre tes records personnels (meilleure journée, plus longue série, cette semaine contre la précédente). Il est calculé à partir des profils enregistrés ici : rien n'est envoyé nulle part, c'est donc pour ceux qui partagent un ordinateur, ou pour faire la course contre toi-même.
 `,
     },
   },
@@ -408,8 +416,8 @@ Sur la page [Profil](/profile), tu peux ajouter des profils pour partager un nav
     icon: "Accessibility",
     title: { en: "Settings and accessibility", fr: "Réglages et accessibilité" },
     lead: {
-      en: "Light or dark theme, reduced motion, editor font size, word wrap, optional streaks, and everything usable with the keyboard.",
-      fr: "Thème clair ou sombre, animations réduites, taille du code, retour à la ligne, séries optionnelles, et tout utilisable au clavier.",
+      en: "Light or dark theme, reduced motion, editor font size, word wrap, the symbol bar, optional streaks, and keyboard shortcuts for everything.",
+      fr: "Thème clair ou sombre, animations réduites, taille du code, retour à la ligne, barre de symboles, séries optionnelles, et des raccourcis clavier pour tout.",
     },
     body: {
       en: md`
@@ -419,14 +427,32 @@ Open [Profile](/profile) to change the language, the daily goal, the theme (Pape
 
 ## Keyboard
 
+On a Mac, read Ctrl as ⌘ and Alt as ⌥. The [[⌨]] button in every editor shows this list with your keyboard's symbols.
+
 | Keys | Action |
 |---|---|
-| Ctrl+Enter | Run the code |
-| Alt+↓ / Alt+↑ | Next / previous step in the trace |
+| Ctrl+Enter, Ctrl+S | Run the code |
+| Alt+Enter | Type \n (a new line inside a string): \ is hard to reach on many keyboards |
+| Ctrl+Alt+Enter | Type PHP_EOL |
+| Ctrl+Space | Show suggestions (also ⌘I on a Mac) |
+| Tab | Accept the suggestion (Enter too), then jump between the fields of a snippet |
 | Ctrl+/ | Comment or uncomment the line |
-| Ctrl+F | Find in the file |
-| Tab | Indent, or accept a suggestion |
+| Ctrl+D | Select the next occurrence |
+| Alt+↑ / Alt+↓ | Move the line up or down |
+| Shift+Alt+↓ | Duplicate the line |
+| Ctrl+Shift+K | Delete the line |
+| Shift+Alt+F | Re-indent the whole file |
+| Ctrl+F | Find and replace |
+| ↓ / ↑ (or → / ←) | Next / previous step in the trace, outside the editor |
 | Esc | Close suggestions and menus |
+
+## Typing symbols
+
+Above the code, a bar of buttons types the characters that are awkward on some keyboards: \n, $, ->, =>, quotes, brackets, |, \ and <?php. On a French Mac keyboard, for example, \ is ⌥⇧/ and | is ⌥⇧L. You can hide the bar in [Profile](/profile).
+
+## Snippets
+
+Type a snippet name and press Tab: foreach, foreachk, if, ifelse, for, while, match, switch, function, fn, class, interface, enum, construct, try, echo, vd (var_dump), printf, require, strict. The cursor jumps to each field to fill in; Tab moves to the next one. Hover a built-in function to see its signature and what it does.
 
 Every control has a visible focus ring, results are announced to screen readers, and the control to press next gently pulses (a steady outline with reduced motion).
 `,
@@ -437,14 +463,32 @@ Ouvre [Profil](/profile) pour changer la langue, l'objectif du jour, le thème (
 
 ## Clavier
 
+Sur Mac, lis Ctrl comme ⌘ et Alt comme ⌥. Le bouton [[⌨]] de chaque éditeur montre cette liste avec les symboles de ton clavier.
+
 | Touches | Action |
 |---|---|
-| Ctrl+Entrée | Exécuter le code |
-| Alt+↓ / Alt+↑ | Étape suivante / précédente dans la trace |
+| Ctrl+Entrée, Ctrl+S | Exécuter le code |
+| Alt+Entrée | Taper \n (retour à la ligne dans une chaîne) : \ est difficile à atteindre sur beaucoup de claviers |
+| Ctrl+Alt+Entrée | Taper PHP_EOL |
+| Ctrl+Espace | Afficher les suggestions (aussi ⌘I sur Mac) |
+| Tab | Accepter la suggestion (Entrée aussi), puis passer d'un champ de snippet à l'autre |
 | Ctrl+/ | Commenter ou décommenter la ligne |
-| Ctrl+F | Chercher dans le fichier |
-| Tab | Indenter, ou accepter une suggestion |
+| Ctrl+D | Sélectionner l'occurrence suivante |
+| Alt+↑ / Alt+↓ | Monter ou descendre la ligne |
+| Maj+Alt+↓ | Dupliquer la ligne |
+| Ctrl+Maj+K | Supprimer la ligne |
+| Maj+Alt+F | Réindenter tout le fichier |
+| Ctrl+F | Chercher et remplacer |
+| ↓ / ↑ (ou → / ←) | Étape suivante / précédente dans la trace, hors de l'éditeur |
 | Échap | Fermer les suggestions et les menus |
+
+## Taper les symboles
+
+Au-dessus du code, une barre de boutons tape les caractères pénibles sur certains claviers : \n, $, ->, =>, guillemets, crochets, |, \ et <?php. Sur un clavier Mac français, par exemple, \ se tape ⌥⇧/ et | se tape ⌥⇧L. Tu peux masquer la barre dans [Profil](/profile).
+
+## Snippets
+
+Tape le nom d'un snippet puis Tab : foreach, foreachk, if, ifelse, for, while, match, switch, function, fn, class, interface, enum, construct, try, echo, vd (var_dump), printf, require, strict. Le curseur saute à chaque champ à remplir ; Tab passe au suivant. Survole une fonction native pour voir sa signature et ce qu'elle fait.
 
 Chaque contrôle a un contour de focus visible, les résultats sont annoncés aux lecteurs d'écran, et le contrôle à utiliser ensuite pulse doucement (un contour fixe avec les animations réduites).
 `,

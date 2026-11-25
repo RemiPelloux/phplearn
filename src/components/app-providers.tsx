@@ -5,29 +5,31 @@ import { useEffect, type ReactNode } from "react";
 import { Award, Zap, Sparkles, Target, X } from "lucide-react";
 import { useProgress, type Toast } from "@/features/progress/store";
 import { ACHIEVEMENTS, levelFor } from "@/features/progress/rules";
-import { detectLocale, useT, type MessageKey } from "@/i18n";
+import { useT, type MessageKey } from "@/i18n";
 import { Button } from "./ui/button";
 import { Confetti } from "./ui/confetti";
 import { DynamicIcon } from "./ui/misc";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const settings = useProgress((s) => s.settings);
-  const updateSettings = useProgress((s) => s.updateSettings);
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
     if (settings.motion === "reduced") document.documentElement.dataset.motion = "reduced";
     else delete document.documentElement.dataset.motion;
   }, [settings.theme, settings.motion]);
 
-  // First visit: guess the language from the browser until the learner picks one.
+  // Match the browser's language (on every visit, and when it changes) until the learner picks one.
+  const followBrowserLocale = useProgress((s) => s.followBrowserLocale);
   useEffect(() => {
-    const apply = () => {
-      const s = useProgress.getState().settings;
-      if (!s.locale) updateSettings({ locale: detectLocale() });
-    };
+    const apply = () => followBrowserLocale();
+    window.addEventListener("languagechange", apply);
+    const unsub = useProgress.persist.onFinishHydration(apply);
     if (useProgress.persist.hasHydrated()) apply();
-    return useProgress.persist.onFinishHydration(apply);
-  }, [updateSettings]);
+    return () => {
+      window.removeEventListener("languagechange", apply);
+      unsub();
+    };
+  }, [followBrowserLocale]);
 
   useEffect(() => {
     if (settings.locale) document.documentElement.lang = settings.locale;

@@ -1,11 +1,11 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from "@codemirror/autocomplete";
-import { defaultKeymap, history, historyKeymap, indentWithTab, toggleComment } from "@codemirror/commands";
-import { bracketMatching, foldGutter, foldKeymap, HighlightStyle, indentOnInput, indentUnit, syntaxHighlighting } from "@codemirror/language";
+import { acceptCompletion, autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap, startCompletion } from "@codemirror/autocomplete";
+import { defaultKeymap, deleteLine, history, historyKeymap, indentWithTab, insertBlankLine, toggleComment } from "@codemirror/commands";
+import { bracketMatching, foldGutter, foldKeymap, HighlightStyle, indentOnInput, indentRange, indentUnit, syntaxHighlighting } from "@codemirror/language";
 import { highlightSelectionMatches, openSearchPanel, searchKeymap } from "@codemirror/search";
-import { Compartment, EditorState, RangeSetBuilder, StateEffect, StateField, type Extension } from "@codemirror/state";
+import { Compartment, EditorSelection, EditorState, RangeSetBuilder, StateEffect, StateField, type Extension } from "@codemirror/state";
 import {
   Decoration,
   drawSelection,
@@ -16,6 +16,7 @@ import {
   highlightActiveLine,
   highlightActiveLineGutter,
   highlightSpecialChars,
+  hoverTooltip,
   keymap,
   lineNumbers,
   rectangularSelection,
@@ -23,7 +24,8 @@ import {
   type DecorationSet,
 } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
-import { langExtension, phpCompletions, type LangId } from "./languages";
+import { functionDoc, phpCompletions } from "./completions";
+import { langExtension, type LangId } from "./languages";
 
 /** Syntax colors come from CSS variables, so the editor follows the app theme. */
 const highlight = HighlightStyle.define([
@@ -174,13 +176,66 @@ const marksGutter = gutter({
   initialSpacer: () => new Dot("none"),
 });
 
+// ───────────────────────── Shortcuts
+
+/** Insert text at every cursor; `back` moves the cursor back that many characters (inside quotes or brackets). */
+export function insertAtCursor(view: EditorView, text: string, back = 0) {
+  view.dispatch(
+    view.state.changeByRange((range) => ({
+      changes: { from: range.from, to: range.to, insert: text },
+      range: EditorSelection.cursor(range.from + text.length - back),
+    })),
+    { scrollIntoView: true, userEvent: "input" },
+  );
+  view.focus();
+  return true;
+}
+
+/** Re-indent the whole file with PHP's indentation rules (a light "Format document"). */
+function formatDocument(view: EditorView) {
+  const changes = indentRange(view.state, 0, view.state.doc.length);
+  if (!changes.empty) view.dispatch({ changes, userEvent: "format" });
+  return true;
+}
+
+/** Hover a built-in function to see its signature and what it does. */
+const functionHover = hoverTooltip((view, pos) => {
+  const word = view.state.wordAt(pos);
+  if (!word) return null;
+  const name = view.state.sliceDoc(word.from, word.to);
+  if (!/^[a-z_]\w*$/.test(name) || view.state.sliceDoc(word.to, word.to + 1) !== "(") return null;
+  const doc = functionDoc(name);
+  if (!doc) return null;
+  return {
+    pos: word.from,
+    end: word.to,
+    above: true,
+    create: () => {
+      const dom = document.createElement("div");
+      dom.style.cssText = "padding:6px 10px;max-width:420px;font-size:12px";
+      const sig = document.createElement("code");
+      sig.textContent = doc.signature;
+      sig.style.cssText = "display:block;font-family:var(--font-mono);white-space:pre-wrap";
+      dom.appendChild(sig);
+      if (doc.text) {
+        const p = document.createElement("p");
+        p.textContent = doc.text;
+        p.style.cssText = "margin-top:4px;color:var(--text-2)";
+        dom.appendChild(p);
+      }
+      return { dom };
+    },
+  };
+});
+
 // ───────────────────────── Component
 
 export interface CodeEditorHandle {
   focus: () => void;
   openSearch: () => void;
   goToLine: (line: number) => void;
-  insert: (text: string) => void;
+  /** Insert at the cursor; `back` places the cursor that many characters before the end. */
+  insert: (text: string, back?: number) => void;
 }
 
 export interface CursorInfo {
@@ -243,14 +298,26 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
       syntaxHighlighting(highlight),
       bracketMatching(),
       closeBrackets(),
-      autocompletion({ activateOnTyping: true, override: lang.startsWith("php") ? [phpCompletions] : undefined }),
+      autocompletion({ activateOnTyping: true, override: lang.startsWith("php") ? [phpCompletions] : undefined, icons: true, maxRenderedOptions: 60 }),
+      lang.startsWith("php") ? functionHover : [],
       rectangularSelection(),
       highlightActiveLine(),
       highlightSelectionMatches(),
       keymap.of([
+        // Tab accepts the highlighted suggestion (when none is open, it indents as usual).
+        { key: "Tab", run: acceptCompletion },
         { key: "Mod-Enter", preventDefault: true, run: () => (cb.current.onRun?.(), true) },
         { key: "Mod-s", preventDefault: true, run: () => (cb.current.onRun?.(), true) },
         { key: "Mod-/", run: toggleComment },
+        // \n is hard to type on many keyboards (⌥⇧/ on a French Mac): ⌥↩ / Alt+Enter types it.
+        { key: "Alt-Enter", preventDefault: true, run: (v) => insertAtCursor(v, "\\n") },
+        { key: "Mod-Alt-Enter", preventDefault: true, run: (v) => insertAtCursor(v, "PHP_EOL") },
+        // No other Alt/⌥ bindings: on Mac (French layout especially) ⌥ + a key types { } [ ] | \.
+        { key: "Shift-Alt-f", preventDefault: true, run: formatDocument },
+        { key: "Mod-Shift-k", preventDefault: true, run: deleteLine },
+        { key: "Mod-i", preventDefault: true, run: startCompletion },
+        { key: "Ctrl-Space", run: startCompletion },
+        { key: "Mod-Shift-Enter", run: insertBlankLine },
         ...closeBracketsKeymap,
         ...defaultKeymap,
         ...searchKeymap,
@@ -321,12 +388,8 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
       v.dispatch({ selection: { anchor: l.from, head: l.to }, effects: EditorView.scrollIntoView(l.from, { y: "center" }) });
       v.focus();
     },
-    insert: (text: string) => {
-      const v = view.current;
-      if (!v) return;
-      const sel = v.state.selection.main;
-      v.dispatch({ changes: { from: sel.from, to: sel.to, insert: text }, selection: { anchor: sel.from + text.length } });
-      v.focus();
+    insert: (text: string, back = 0) => {
+      if (view.current) insertAtCursor(view.current, text, back);
     },
   }));
 

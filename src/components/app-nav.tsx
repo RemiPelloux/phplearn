@@ -5,7 +5,7 @@ import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, BookText, Check, Download, Flame, FlaskConical, HardDrive, History, Languages, Map as MapIcon, Moon, Sun, UserRound, UserRoundPlus } from "lucide-react";
+import { BookOpen, BookText, Check, Download, Flame, FlaskConical, HardDrive, History, Languages, Map as MapIcon, Moon, Sun, Trophy, UserRound, UserRoundPlus } from "lucide-react";
 import { readIndex, switchProfile, type ProfileIndex } from "@/features/progress/profiles";
 import { useProgress } from "@/features/progress/store";
 import { dayKey, levelFor, streak } from "@/features/progress/rules";
@@ -16,6 +16,7 @@ import { Logo, Ring, useHydrated } from "@/components/ui/misc";
 const LINKS = [
   { href: "/learn", key: "nav.learn", icon: MapIcon, mobile: true, desktop: true },
   { href: "/playground", key: "nav.playground", icon: FlaskConical, mobile: true, desktop: true },
+  { href: "/leaderboard", key: "nav.leaderboard", icon: Trophy, mobile: false, desktop: true },
   { href: "/reference", key: "nav.reference", icon: BookText, mobile: false, desktop: true },
   { href: "/versions", key: "nav.versions", icon: History, mobile: true, desktop: true },
   { href: "/docs", key: "nav.docs", icon: BookOpen, mobile: true, desktop: true },
@@ -79,7 +80,7 @@ export function AppNav() {
                 )}
               </Link>
             )}
-            <LanguageMenu value={t.locale} onChange={(locale) => updateSettings({ locale })} />
+            <LanguageMenu value={t.locale} auto={hydrated && !settings.localeChosen} onChange={(locale) => updateSettings({ locale })} onAuto={() => useProgress.getState().followBrowserLocale(true)} />
             <button
               onClick={() => updateSettings({ theme: settings.theme === "dark" ? "light" : "dark" })}
               className="grid size-9 place-items-center rounded-lg text-fg-2 hover:bg-surface-2 hover:text-fg"
@@ -147,8 +148,9 @@ function XpCounter({ xp }: { xp: number }) {
   );
 }
 
-function LanguageMenu({ value, onChange }: { value: Locale; onChange: (l: Locale) => void }) {
+function LanguageMenu({ value, auto, onChange, onAuto }: { value: Locale; auto: boolean; onChange: (l: Locale) => void; onAuto: () => void }) {
   const t = useT();
+  const fr = t.locale === "fr";
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -183,26 +185,41 @@ function LanguageMenu({ value, onChange }: { value: Locale; onChange: (l: Locale
             exit={{ opacity: 0, y: -4, transition: { duration: 0.1 } }}
             role="listbox"
             aria-label={t("common.language")}
-            className="absolute right-0 mt-1.5 w-40 overflow-hidden rounded-xl border border-line bg-elevated p-1 shadow-[var(--shadow-lg)]"
+            className="absolute right-0 mt-1.5 w-52 overflow-hidden rounded-xl border border-line bg-elevated p-1 shadow-[var(--shadow-lg)]"
           >
             {LOCALES.map((l) => (
               <li key={l.id}>
                 <button
                   role="option"
-                  aria-selected={l.id === value}
+                  aria-selected={!auto && l.id === value}
                   lang={l.id}
                   onClick={() => {
                     onChange(l.id);
                     setOpen(false);
                   }}
-                  className={clsx("flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm", l.id === value ? "bg-accent-soft text-accent-fg" : "hover:bg-surface-2")}
+                  className={clsx("flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm", !auto && l.id === value ? "bg-accent-soft text-accent-fg" : "hover:bg-surface-2")}
                 >
                   <span className="w-6 font-mono text-[11px] text-fg-3">{l.short}</span>
                   <span className="flex-1">{l.label}</span>
-                  {l.id === value && <Check className="size-4" />}
+                  {!auto && l.id === value && <Check className="size-4" />}
                 </button>
               </li>
             ))}
+            <li className="mt-1 border-t border-line pt-1">
+              <button
+                role="option"
+                aria-selected={auto}
+                onClick={() => {
+                  onAuto();
+                  setOpen(false);
+                }}
+                className={clsx("flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm", auto ? "bg-accent-soft text-accent-fg" : "hover:bg-surface-2")}
+              >
+                <span className="w-6 font-mono text-[11px] text-fg-3">{"A"}</span>
+                <span className="flex-1">{fr ? "Langue du navigateur" : "Match my browser"}</span>
+                {auto && <Check className="size-4" />}
+              </button>
+            </li>
           </motion.ul>
         )}
       </AnimatePresence>
@@ -262,6 +279,9 @@ function ProfileMenu({ name, avatar }: { name: string; avatar: Parameters<typeof
             </div>
             <MenuLink href="/profile" icon={<UserRound className="size-4" />} onPick={() => setOpen(false)}>
               {fr ? "Profil et réglages" : "Profile and settings"}
+            </MenuLink>
+            <MenuLink href="/leaderboard" icon={<Trophy className="size-4" />} onPick={() => setOpen(false)}>
+              {fr ? "Classement" : "Leaderboard"}
             </MenuLink>
             <MenuLink href="/profile#data" icon={<HardDrive className="size-4" />} onPick={() => setOpen(false)}>
               {fr ? "Tes données et sauvegardes" : "Your data and backups"}

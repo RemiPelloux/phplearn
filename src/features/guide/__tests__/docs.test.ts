@@ -3,7 +3,7 @@ import { ALL_LESSONS, isCodeStep } from "@/features/curriculum";
 import { CHEATS } from "@/features/cheats/cheats";
 import { DOC_PAGES } from "../pages";
 
-const ROUTES = new Set(["/", "/learn", "/playground", "/reference", "/versions", "/docs", "/setup", "/profile", "/welcome"]);
+const ROUTES = new Set(["/", "/learn", "/leaderboard", "/playground", "/reference", "/versions", "/docs", "/setup", "/profile", "/welcome"]);
 const ok = (href: string) => {
   const path = href.split("#")[0];
   if (ROUTES.has(path)) return true;

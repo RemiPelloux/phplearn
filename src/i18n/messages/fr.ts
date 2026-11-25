@@ -15,6 +15,7 @@ export const fr: Messages = {
   },
   nav: {
     learn: "Apprendre",
+    leaderboard: "Classement",
     playground: "Bac à sable",
     reference: "Référence",
     versions: "Versions",

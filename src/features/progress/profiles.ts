@@ -123,7 +123,7 @@ export function createProfile(name: string) {
   set(PROGRESS_KEY, null);
   set(PLAYGROUND_KEY, null);
   set(INDEX_KEY, JSON.stringify({ ...index, active: id }));
-  if (name.trim()) set(PROGRESS_KEY, JSON.stringify({ version: 2, state: { name: name.trim(), avatar: `lane-${(index.profiles.length - 1) % 6}` } }));
+  if (name.trim()) set(PROGRESS_KEY, JSON.stringify({ version: 1, state: { name: name.trim(), avatar: `lane-${(index.profiles.length - 1) % 6}` } }));
   window.location.assign(withBase("/welcome"));
 }
 
@@ -133,6 +133,22 @@ export function deleteProfile(id: string) {
   set(slotKey(id), null);
   set(INDEX_KEY, JSON.stringify({ ...index, profiles: index.profiles.filter((p) => p.id !== id) }));
   return true;
+}
+
+/** The saved progress of every profile on this browser (the active one from its live key). */
+export function readAllProgress(): Array<{ meta: ProfileMeta; active: boolean; state: unknown }> {
+  const index = readIndex();
+  return index.profiles.map((meta) => {
+    const active = meta.id === index.active;
+    let state: unknown = null;
+    try {
+      const raw = active ? get(PROGRESS_KEY) : ((JSON.parse(get(slotKey(meta.id)) ?? "null") as Parked | null)?.progress ?? null);
+      state = raw ? (JSON.parse(raw) as { state?: unknown }).state ?? null : null;
+    } catch {
+      state = null;
+    }
+    return { meta, active, state };
+  });
 }
 
 // ───────────────────────────────────────────── Backup

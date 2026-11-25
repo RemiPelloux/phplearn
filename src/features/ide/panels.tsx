@@ -265,7 +265,7 @@ export function TracePanel({
         <button className={btn} onClick={() => go(0)} disabled={cur <= 0} aria-label={l("First step", "Première étape")} title={l("First step", "Première étape")}>
           <SkipBack className="size-3.5" />
         </button>
-        <button className={btn} onClick={() => go(cur - 1)} disabled={cur <= 0} aria-label={l("Previous step (Alt+↑)", "Étape précédente (Alt+↑)")} title={l("Previous step (Alt+↑)", "Étape précédente (Alt+↑)")}>
+        <button className={btn} onClick={() => go(cur - 1)} disabled={cur <= 0} aria-label={l("Previous step (↑)", "Étape précédente (↑)")} title={l("Previous step (↑)", "Étape précédente (↑)")}>
           <StepBack className="size-3.5" />
         </button>
         <button
@@ -279,7 +279,7 @@ export function TracePanel({
           {playing ? <Pause className="size-3.5" /> : <Play className="size-3.5 fill-current" />}
           {playing ? l("Pause", "Pause") : l("Play", "Lecture")}
         </button>
-        <button className={btn} onClick={() => go(cur + 1)} disabled={cur >= steps.length - 1} aria-label={l("Next step (Alt+↓)", "Étape suivante (Alt+↓)")} title={l("Next step (Alt+↓)", "Étape suivante (Alt+↓)")}>
+        <button className={btn} onClick={() => go(cur + 1)} disabled={cur >= steps.length - 1} aria-label={l("Next step (↓)", "Étape suivante (↓)")} title={l("Next step (↓)", "Étape suivante (↓)")}>
           <StepForward className="size-3.5" />
         </button>
         <button className={btn} onClick={() => go(steps.length - 1)} disabled={cur >= steps.length - 1} aria-label={l("Last step", "Dernière étape")} title={l("Last step", "Dernière étape")}>

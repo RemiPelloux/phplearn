@@ -3,9 +3,9 @@
 import { clsx } from "clsx";
 import { Accessibility, Flame, Keyboard, Languages, Palette, Play, Star, Target, Trophy, Type, WrapText } from "lucide-react";
 import { Avatar, AVATAR_HEX } from "@/components/ui/avatar";
-import { Kbd } from "@/components/ui/button";
 import { Card, DynamicIcon, ProgressBar, useHydrated } from "@/components/ui/misc";
 import { LOCALES, useL, useT, type Locale, type MessageKey } from "@/i18n";
+import { ShortcutList } from "@/features/ide/shortcuts";
 import { DataSection, ProfilesSection } from "./profile-data";
 import { useProgress, type Settings } from "./store";
 import { ACHIEVEMENTS, AVATAR_COLORS, DAILY_GOALS, dayKey, levelFor, type DailyGoal } from "./rules";
@@ -140,8 +140,12 @@ function ProfileInner() {
           {l("Preferences & accessibility", "Préférences et accessibilité")}
         </h2>
         <Card className="divide-y divide-line">
-          <Setting icon={<Languages className="size-4" />} title={l("Language", "Langue")} desc={l("Lessons and explanations. PHP code and its messages stay in English, like the real thing.", "Leçons et explications. Le code PHP et ses messages restent en anglais, comme en vrai.")}>
-            <Segmented value={t.locale} options={LOCALES.map((l) => [l.id, l.label])} onChange={(v) => p.updateSettings({ locale: v as Locale })} />
+          <Setting icon={<Languages className="size-4" />} title={l("Language", "Langue")} desc={l("Follows your browser's language unless you pick one. PHP code and its messages stay in English, like the real thing.", "Suit la langue de ton navigateur sauf si tu en choisis une. Le code PHP et ses messages restent en anglais, comme en vrai.")}>
+            <Segmented
+              value={p.settings.localeChosen ? t.locale : "auto"}
+              options={[["auto", l("Browser", "Navigateur")], ...LOCALES.map((x): [string, string] => [x.id, x.label])]}
+              onChange={(v) => (v === "auto" ? p.followBrowserLocale(true) : p.updateSettings({ locale: v as Locale }))}
+            />
           </Setting>
           <Setting icon={<Target className="size-4" />} title={l("Daily goal", "Objectif du jour")} desc={l("How much XP you aim for each day.", "Combien d'XP tu vises chaque jour.")}>
             <Segmented
@@ -174,6 +178,9 @@ function ProfileInner() {
           <Setting icon={<Type className="size-4" />} title={l("Editor font size", "Taille du code")} desc={l("Size of the code in every editor.", "Taille du code dans tous les éditeurs.")}>
             <Segmented value={String(p.settings.fontSize)} options={[["13", "S"], ["14", "M"], ["16", "L"], ["18", "XL"]]} onChange={(v) => p.updateSettings({ fontSize: Number(v) })} />
           </Setting>
+          <Setting icon={<Keyboard className="size-4" />} title={l("Symbol bar", "Barre de symboles")} desc={l("Buttons above the code for \\n, $, ->, quotes, brackets, | and \\ (handy on a Mac or a phone).", "Des boutons au-dessus du code pour \\n, $, ->, guillemets, crochets, | et \\ (pratique sur Mac ou sur téléphone).")}>
+            <Segmented value={p.settings.symbolBar === false ? "off" : "on"} options={[["on", l("On", "Oui")], ["off", l("Off", "Non")]]} onChange={(v) => p.updateSettings({ symbolBar: v === "on" })} />
+          </Setting>
           <Setting icon={<WrapText className="size-4" />} title={l("Word wrap", "Retour à la ligne")} desc={l("Wrap long lines instead of scrolling sideways.", "Couper les longues lignes au lieu de défiler de côté.")}>
             <Segmented value={p.settings.wordWrap ? "on" : "off"} options={[["on", l("On", "Oui")], ["off", l("Off", "Non")]]} onChange={(v) => p.updateSettings({ wordWrap: v === "on" })} />
           </Setting>
@@ -192,29 +199,9 @@ function ProfileInner() {
           <h3 className="flex items-center gap-2 text-sm font-semibold">
             <Keyboard className="size-4" /> {l("Keyboard shortcuts", "Raccourcis clavier")}
           </h3>
-          <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-            {(
-              [
-                [["Ctrl", "Enter"], l("Run the code", "Exécuter le code")],
-                [["Ctrl", "S"], l("Run (saves are automatic)", "Exécuter (l'enregistrement est automatique)")],
-                [["Ctrl", "/"], l("Comment a line", "Commenter une ligne")],
-                [["Ctrl", "F"], l("Find in the file", "Chercher dans le fichier")],
-                [["Ctrl", "Z"], l("Undo", "Annuler")],
-                [["Alt", "↑/↓"], l("Move through the trace", "Avancer dans la trace")],
-                [["Tab"], l("Indent / accept a suggestion", "Indenter / accepter une suggestion")],
-                [["Esc"], l("Close suggestions", "Fermer les suggestions")],
-              ] as const
-            ).map(([keys, label]) => (
-              <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-surface-2/60 px-3 py-1.5">
-                <dt className="text-fg-2">{label}</dt>
-                <dd className="flex gap-1">
-                  {keys.map((k) => (
-                    <Kbd key={k}>{k}</Kbd>
-                  ))}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <div className="mt-3">
+            <ShortcutList />
+          </div>
         </Card>
       </section>
 

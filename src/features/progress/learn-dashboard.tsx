@@ -195,6 +195,15 @@ function Dashboard() {
             </ul>
           </Card>
 
+          <Link href="/leaderboard" className="group flex items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4 shadow-[var(--shadow-card)] hover:border-line-strong">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-warn-soft text-warn">
+              <Trophy className="size-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold group-hover:text-accent-fg">{l("Leaderboard", "Classement")}</span>
+              <span className="block text-xs text-fg-3">{l("Race the other profiles on this device, or beat last week's you.", "Fais la course avec les autres profils de cet appareil, ou bats ton toi de la semaine dernière.")}</span>
+            </span>
+          </Link>
           <VersionsUsed versions={p.versions} />
           <Activity activity={p.activity} />
         </aside>

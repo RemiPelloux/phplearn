@@ -13,6 +13,7 @@ export const en = {
   },
   nav: {
     learn: "Learn",
+    leaderboard: "Leaderboard",
     playground: "Playground",
     reference: "Reference",
     versions: "Versions",
